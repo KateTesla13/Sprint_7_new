@@ -33,4 +33,4 @@ build/
 Thumbs.db
 
 # Allure (временные файлы)
-allure-results/
+allure-report/
