@@ -1,56 +1,40 @@
 package ru.yandex.praktikum.order;
 
-import io.qameta.allure.Step;
-import io.restassured.response.Response;
+import io.qameta.allure.junit4.DisplayName;
 import org.junit.Test;
 import ru.yandex.praktikum.BaseTest;
-import ru.yandex.praktikum.models.Courier;
-import static io.restassured.RestAssured.given;
+
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class GetOrdersTest extends BaseTest {
 
     @Test
-    @Step("Получение списка всех заказов")
+    @DisplayName("Получение списка всех заказов")
     public void getOrdersList() {
-        given()
-                .get("/api/v1/orders")
+        orderClient.getOrders()
                 .then()
-                .statusCode(200)
+                .statusCode(SC_OK)
                 .body("orders", notNullValue());
     }
 
     @Test
-    @Step("Получение списка заказов по ID курьера: {courierId}")
+    @DisplayName("Получение списка заказов по ID курьера")
     public void getOrdersByCourierId() {
-        Courier courier = createCourier();
-
-        Response loginResponse = given()
-                .header("Content-type", "application/json")
-                .body(new Courier(courier.getLogin(), courier.getPassword()))
-                .post("/api/v1/courier/login");
-
-        int courierId = loginResponse.then().extract().path("id");
-
-        given()
-                .queryParam("courierId", courierId)
-                .get("/api/v1/orders")
+        orderClient.getOrdersByCourierId(courierId)
                 .then()
-                .statusCode(200)
+                .statusCode(SC_OK)
                 .body("orders", notNullValue());
-
-        this.courierId = courierId;
     }
     @Test
-    @Step("Получение списка заказов с неверным ID курьера: {wrongCourierId}")
-    public void getOrdersByCourierIdWithWrongId() { //получение списка заказов курьера с неверным Id
+    @DisplayName("Получение списка заказов с неверным ID курьера")
+    public void getOrdersByCourierIdWithWrongId() {
         int wrongCourierId = 999999;
-        given()
-                .queryParam("courierId", wrongCourierId)
-                .get("/api/v1/orders")
+        orderClient.getOrdersByCourierId(wrongCourierId)
                 .then()
-                .statusCode(404)
+                .statusCode(SC_NOT_FOUND)
                 .body("message", equalTo("Курьер с идентификатором " + wrongCourierId + " не найден"));
     }
 }

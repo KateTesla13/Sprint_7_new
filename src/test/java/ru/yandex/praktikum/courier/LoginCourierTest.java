@@ -1,78 +1,56 @@
 package ru.yandex.praktikum.courier;
 
-import io.qameta.allure.Step;
-import io.restassured.response.Response;
+import io.qameta.allure.junit4.DisplayName;
 import org.junit.Test;
 import ru.yandex.praktikum.BaseTest;
-import ru.yandex.praktikum.models.Courier;
 
-import static io.restassured.RestAssured.given;
+import static org.apache.http.HttpStatus.*;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class LoginCourierTest extends BaseTest {
 
-    @Step("Отправка запроса на логин курьера с логином: {login}")
-    public Response loginCourierRequest(String login, String password) {
-        return given()
-                .header("Content-type", "application/json")
-                .body(new Courier(login, password))
-                .post("/api/v1/courier/login");
-    }
-
     @Test
-    @Step("Проверка успешного логина курьера")
+    @DisplayName("Авторизация с правильным логином курьера")
     public void loginCourierSuccess() {
-        Courier courier = createCourier();
-
-        Response loginResponse = loginCourierRequest(courier.getLogin(), courier.getPassword());
-
-        loginResponse.then()
-                .statusCode(200)
+        courierClient.login(courier.getLogin(), courier.getPassword())
+                .then()
+                .statusCode(SC_OK)
                 .body("id", notNullValue());
-
-        courierId = loginResponse.then().extract().path("id");
     }
 
     @Test
-    @Step("Проверка логина с неверным паролем")
+    @DisplayName("Авторизация логина с неверным паролем")
     public void loginCourierWrongPassword() {
-        Courier courier = createCourier();
-
-        Response loginResponse = loginCourierRequest(courier.getLogin(), courier.getPassword());
-        courierId = loginResponse.then().extract().path("id");
-
-        loginCourierRequest(courier.getLogin(), "wrongPassword")
+        courierClient.login(courier.getLogin(), "wrongPassword")
                 .then()
-                .statusCode(404)
+                .statusCode(SC_NOT_FOUND)
                 .body("message", equalTo("Учетная запись не найдена"));
     }
 
     @Test
-    @Step("Проверка авторизации с неверным логином")
+    @DisplayName("Авторизации с неверным логином")
     public void loginCourierWrongLogin() {
-        Courier courier = createCourier();
-
-        Response loginResponse = loginCourierRequest(courier.getLogin(), courier.getPassword());
-        courierId = loginResponse.then().extract().path("id");
-
-        loginCourierRequest("wrongLogin", courier.getPassword())
+        courierClient.login("wrongLogin", courier.getPassword())
                 .then()
-                .statusCode(404)
+                .statusCode(SC_NOT_FOUND)
                 .body("message", equalTo("Учетная запись не найдена"));
     }
 
     @Test
-    @Step("Проверка логина без пароля")
+    @DisplayName("Авторизация без пароля")
     public void loginCourierNoPassword() {
-        Courier courier = createCourier();
-
-        Response loginResponse = loginCourierRequest(courier.getLogin(), courier.getPassword());
-        courierId = loginResponse.then().extract().path("id");
-
-        loginCourierRequest(courier.getLogin(), "")
+        courierClient.login(courier.getLogin(), "")
                 .then()
-                .statusCode(400)
+                .statusCode(SC_BAD_REQUEST)
+                .body("message", equalTo("Недостаточно данных для входа"));
+    }
+    @Test
+    @DisplayName("Авторизация без логина")
+    public void loginCourierWithoutLogin() {
+        courierClient.login("", courier.getPassword())
+                .then()
+                .statusCode(SC_BAD_REQUEST)
                 .body("message", equalTo("Недостаточно данных для входа"));
     }
 }

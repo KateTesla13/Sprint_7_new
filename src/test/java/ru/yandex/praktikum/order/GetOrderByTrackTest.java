@@ -1,59 +1,44 @@
 package ru.yandex.praktikum.order;
 
-import io.qameta.allure.Step;
-import io.restassured.response.Response;
+import io.qameta.allure.junit4.DisplayName;
 import org.junit.Test;
 import ru.yandex.praktikum.BaseTest;
 import ru.yandex.praktikum.models.Order;
-import static io.restassured.RestAssured.given;
+import static org.apache.http.HttpStatus.*;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class GetOrderByTrackTest extends BaseTest {
 
     @Test
-    @Step("Получение заказа по track: {track}")
+    @DisplayName("Успешное получение заказа по track")
     public void getOrderByTrackSuccess() {
-        // Создаём заказ
         Order order = new Order(
                 "Naruto", "Uzumaki", "Konoha, 142 apt.", 4, "+7 800 355 35 35", 5, "2020-06-06", "Saske, come back to Konoha", null
         );
+        int track = createOrderAndGetTrack(order);
 
-        Response orderResponse = given()
-                .header("Content-type", "application/json")
-                .body(order)
-                .post("/api/v1/orders");
-
-        orderResponse.then().statusCode(201);
-        int track = orderResponse.then().extract().path("track");
-
-        // Получаем заказ по track
-        given()
-                .queryParam("t", track)
-                .get("/api/v1/orders/track")
+        orderClient.getOrderByTrack(track)
                 .then()
-                .statusCode(200)
+                .statusCode(SC_OK)
                 .body("order", notNullValue());
     }
 
     @Test
-    @Step("Получение заказа без указания track")
+    @DisplayName("Получение заказа без указания track")
     public void getOrderByTrackWithoutTrack() {
-        given()
-                .get("/api/v1/orders/track")
+        orderClient.getOrderByTrackWithoutTrack()
                 .then()
-                .statusCode(400)
+                .statusCode(SC_BAD_REQUEST)
                 .body("message", equalTo("Недостаточно данных для поиска"));
     }
 
     @Test
-    @Step("Получение заказа с неверным track: 999999")
+    @DisplayName("Получение заказа с неверным track")
     public void getOrderByTrackWithWrongTrack() {
-        given()
-                .queryParam("t", 999999)
-                .get("/api/v1/orders/track")
+        orderClient.getOrderByTrack(999999)
                 .then()
-                .statusCode(404)
+                .statusCode(SC_NOT_FOUND)
                 .body("message", equalTo("Заказ не найден"));
     }
 }

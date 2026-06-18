@@ -31,6 +31,3 @@ build/
 # Mac OS
 .DS_Store
 Thumbs.db
-
-# Allure (временные файлы)
-allure-results/

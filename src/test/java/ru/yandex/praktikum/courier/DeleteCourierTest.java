@@ -1,54 +1,40 @@
 package ru.yandex.praktikum.courier;
 
 import io.qameta.allure.Description;
-import io.qameta.allure.Step;
-import io.restassured.response.Response;
+import io.qameta.allure.junit4.DisplayName;
 import org.junit.Test;
 import ru.yandex.praktikum.BaseTest;
-import ru.yandex.praktikum.models.Courier;
-import static io.restassured.RestAssured.given;
+import static org.apache.http.HttpStatus.*;
 import static org.hamcrest.Matchers.equalTo;
 
 public class DeleteCourierTest extends BaseTest {
 
     @Test
-    @Step("Успешное удаление курьера по ID: {courierId}")
+    @DisplayName("Успешное удаление курьера по ID")
     public void deleteCourierSuccess() {
-        Courier courier = createCourier();
-
-        Response loginResponse = given()
-                .header("Content-type", "application/json")
-                .body(new Courier(courier.getLogin(), courier.getPassword()))
-                .post("/api/v1/courier/login");
-
-        int courierId = loginResponse.then().extract().path("id");
-
-        given()
-                .delete("/api/v1/courier/" + courierId)
+        courierClient.delete(courierId)
                 .then()
-                .statusCode(200)
+                .statusCode(SC_OK)
                 .body("ok", equalTo(true));
     }
 
     @Test
+    @DisplayName("Удаление курьера без ID")
     @Description("Баг API: ОР: status code <400> / ФР: status code <404>")
-    @Step("Удаление курьера без ID")
     public void deleteCourierWithoutId() {
-        given()
-                .delete("/api/v1/courier/")
+        courierClient.deleteWithoutId()
                 .then()
-                .statusCode(400)
+                .statusCode(SC_BAD_REQUEST)
                 .body("message", equalTo("Недостаточно данных для удаления курьера"));
     }
 
     @Test
+    @DisplayName("Удаление курьера с неверным ID")
     @Description("Баг API: ОР: Курьера с таким id нет / ФР: Курьера с таким id нет.")
-    @Step("Удаление курьера с неверным ID: 999999")
     public void deleteCourierWithWrongId() {
-        given()
-                .delete("/api/v1/courier/999999")
+        courierClient.delete(999999)
                 .then()
-                .statusCode(404)
+                .statusCode(SC_NOT_FOUND)
                 .body("message", equalTo("Курьера с таким id нет"));
     }
 }
